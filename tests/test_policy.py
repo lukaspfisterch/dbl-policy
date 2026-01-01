@@ -12,6 +12,8 @@ from dbl_policy import (
     TenantId,
     decision_to_dbl_event,
 )
+from dbl_policy.allow_all import POLICY as ALLOW_POLICY
+from dbl_policy.deny_all import POLICY as DENY_POLICY
 
 
 class ExamplePolicy:
@@ -71,3 +73,17 @@ def test_decision_to_dbl_event():
     assert isinstance(event.data, GateDecision)
     assert event.data.decision == "ALLOW"
     assert event.data.reason_code == "ok"
+
+
+def test_allow_all_policy() -> None:
+    ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
+    d = ALLOW_POLICY.evaluate(ctx)
+    assert d.outcome == DecisionOutcome.ALLOW
+    assert d.reason_code == "allow_all"
+
+
+def test_deny_all_policy() -> None:
+    ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
+    d = DENY_POLICY.evaluate(ctx)
+    assert d.outcome == DecisionOutcome.DENY
+    assert d.reason_code == "deny_all"
