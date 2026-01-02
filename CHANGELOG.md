@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2] - 2026-01-02
+
+- Add deterministic starter policy pack with composed allow/deny rules
+- Introduce centralized policy config for allowlists and caps
+- Tighten PolicyContext allowed keys to minimal starter set (+ extensions)
+- Align builtin policy versions and docs with 0.2.2
+
 ## [0.2.1] - 2026-01-02
 
 - Documentation and test hygiene

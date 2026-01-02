@@ -19,10 +19,10 @@ def test_rejects_float_inputs():
     # Lücke B: Canonical-safety (floats verboten)
     tenant_id = TenantId("t1")
     with pytest.raises(ValidationError, match="float not allowed"):
-        PolicyContext(tenant_id=tenant_id, inputs={"use_case": 1.5})
+        PolicyContext(tenant_id=tenant_id, inputs={"intent_type": 1.5})
     
     with pytest.raises(ValidationError, match="float not allowed"):
-        PolicyContext(tenant_id=tenant_id, inputs={"use_case": [1, 2, 3.0]})
+        PolicyContext(tenant_id=tenant_id, inputs={"intent_type": [1, 2, 3.0]})
 
 
 def test_rejects_unknown_context_key():
@@ -107,31 +107,39 @@ def test_version_alignment():
     
     project_version = config["project"]["version"]
     assert dbl_policy.__version__ == project_version
-    assert project_version == "0.2.1"
+    assert project_version == "0.2.2"
 
 
 def test_authoritative_digest_is_stable_under_nested_key_ordering():
     tenant_id = TenantId("t1")
     ctx1 = PolicyContext(
         tenant_id=tenant_id,
-        inputs={"use_case": "x", "metadata": {"b": 2, "a": 1}},
+        inputs={"intent_type": "x", "extensions": {"b": 2, "a": 1}},
     )
     ctx2 = PolicyContext(
         tenant_id=tenant_id,
-        inputs={"use_case": "x", "metadata": {"a": 1, "b": 2}},
+        inputs={"intent_type": "x", "extensions": {"a": 1, "b": 2}},
     )
     assert ctx1.compute_authoritative_digest() == ctx2.compute_authoritative_digest()
 
 
 def test_context_is_snapshot_not_alias():
     tenant_id = TenantId("t1")
-    raw = {"use_case": "x", "metadata": {"a": 1}}
+    raw = {"intent_type": "x", "extensions": {"a": 1}}
     ctx = PolicyContext(tenant_id=tenant_id, inputs=raw)
 
-    raw["metadata"]["a"] = 2
+    raw["extensions"]["a"] = 2
 
-    assert ctx.to_dict()["inputs"]["metadata"]["a"] == 1
+    assert ctx.to_dict()["inputs"]["extensions"]["a"] == 1
     assert ctx.compute_authoritative_digest() == PolicyContext(
         tenant_id=tenant_id,
-        inputs={"use_case": "x", "metadata": {"a": 1}},
+        inputs={"intent_type": "x", "extensions": {"a": 1}},
     ).compute_authoritative_digest()
+
+
+def test_rejects_removed_context_keys():
+    tenant_id = TenantId("t1")
+    with pytest.raises(ValueError, match="context key not whitelisted"):
+        PolicyContext(tenant_id=tenant_id, inputs={"correlation_id": "c1"})
+    with pytest.raises(ValueError, match="context key not whitelisted"):
+        PolicyContext(tenant_id=tenant_id, inputs={"metadata": {"a": 1}})

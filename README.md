@@ -56,7 +56,7 @@ from dbl_policy.allow_all import POLICY as ALLOW_ALL
 
 ctx = PolicyContext(
     tenant_id=TenantId("tenant-1"),
-    inputs={"use_case": "llm-generate"},
+    inputs={"intent_type": "chat.message"},
 )
 
 decision = ALLOW_ALL.evaluate(ctx)
@@ -107,12 +107,12 @@ class ExamplePolicy:
     policy_version: PolicyVersion = PolicyVersion("1.0.0")
 
     def evaluate(self, context: PolicyContext) -> PolicyDecision:
-        use_case = context.inputs.get("use_case")
-        if use_case == "blocked":
+        intent_type = context.inputs.get("intent_type")
+        if intent_type == "blocked":
             return PolicyDecision(
                 outcome=DecisionOutcome.DENY,
                 reason_code=reason_codes.TENANT_BLOCKED,
-                reason_message="blocked use_case",
+                reason_message="blocked intent_type",
                 policy_id=self.policy_id,
                 policy_version=self.policy_version,
                 tenant_id=context.tenant_id,
@@ -138,9 +138,32 @@ class ExamplePolicy:
 from dbl_policy import decide_safe
 from dbl_policy.allow_all import POLICY
 
-d1 = decide_safe(POLICY, "tenant-1", {"use_case": "x"})
+d1 = decide_safe(POLICY, "tenant-1", {"intent_type": "x"})
 d2 = decide_safe(POLICY, "tenant-1", {"unknown_key": "x"})  # -> DENY
 ```
+
+## Starter policy pack
+
+The minimal starter pack is in `dbl_policy.policies.compose` and is designed for
+small teams. It evaluates in order and stops at the first DENY.
+
+Allowed context keys (strict whitelist):
+- principal_id
+- workspace_id
+- intent_type
+- capability
+- model_id
+- provider
+- max_output_tokens
+- input_bytes
+- input_chars
+- risk_tier
+- request_tags
+- extensions
+
+Policy configuration lives in a single static dict:
+`dbl_policy.policies.compose.POLICY_CONFIG`.
+Edit it in-code to change allowlists and caps (no IO or env).
 
 ## Reason codes
 
@@ -154,6 +177,14 @@ Reason codes are stable semantic identifiers:
 - tenant_blocked
 - missing_required_input
 - evaluation_error
+- admission.missing_required
+- admission.invalid_value
+- capability.denied
+- model.denied
+- cost.output_tokens_cap
+- cost.input_bytes_cap
+- cost.input_chars_cap
+- risk.high_requires_override
 
 See `src/dbl_policy/reason_codes.py`.
 

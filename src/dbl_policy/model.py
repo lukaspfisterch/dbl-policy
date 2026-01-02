@@ -36,12 +36,17 @@ class DecisionOutcome(str, Enum):
 # Explicit whitelist of allowed keys in PolicyContext.
 # This ensures that policies never "accidentally" see observational or unvetted inputs.
 ALLOWED_CONTEXT_KEYS = {
-    "use_case",
-    "resource_id",
-    "action",
-    "subject_id",
-    "subject_roles",
-    "metadata",
+    "principal_id",
+    "workspace_id",
+    "intent_type",
+    "capability",
+    "model_id",
+    "provider",
+    "max_output_tokens",
+    "input_bytes",
+    "input_chars",
+    "risk_tier",
+    "request_tags",
     "extensions",
 }
 

@@ -51,7 +51,7 @@ class ExamplePolicy:
 
 def test_determinism_same_context_same_decision():
     policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
-    context = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
+    context = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"intent_type": "x"})
     d1 = policy.evaluate(context)
     d2 = policy.evaluate(context)
     assert d1 == d2
@@ -59,8 +59,8 @@ def test_determinism_same_context_same_decision():
 
 def test_tenant_scoping_changes_decision():
     policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
-    allow_ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
-    deny_ctx = PolicyContext(tenant_id=TenantId("tenant-deny"), inputs={"use_case": "x"})
+    allow_ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"intent_type": "x"})
+    deny_ctx = PolicyContext(tenant_id=TenantId("tenant-deny"), inputs={"intent_type": "x"})
     assert policy.evaluate(allow_ctx).outcome == DecisionOutcome.ALLOW
     assert policy.evaluate(deny_ctx).outcome == DecisionOutcome.DENY
 
@@ -88,14 +88,14 @@ def test_decision_to_dbl_event():
 
 
 def test_allow_all_policy() -> None:
-    ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
+    ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"intent_type": "x"})
     d = ALLOW_POLICY.evaluate(ctx)
     assert d.outcome == DecisionOutcome.ALLOW
     assert d.reason_code == reason_codes.ALLOW_ALL
 
 
 def test_deny_all_policy() -> None:
-    ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
+    ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"intent_type": "x"})
     d = DENY_POLICY.evaluate(ctx)
     assert d.outcome == DecisionOutcome.DENY
     assert d.reason_code == reason_codes.DENY_ALL
@@ -106,7 +106,7 @@ def test_decide_safe():
     policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
     
     # Valid input
-    d = decide_safe(policy, "t1", {"use_case": "x"})
+    d = decide_safe(policy, "t1", {"intent_type": "x"})
     assert d.outcome == DecisionOutcome.ALLOW
     assert d.authoritative_digest != ""
     
@@ -116,7 +116,7 @@ def test_decide_safe():
     assert d.reason_code == reason_codes.UNKNOWN_CONTEXT_KEY
     
     # Invalid type (float)
-    d = decide_safe(policy, "t1", {"use_case": 1.5})
+    d = decide_safe(policy, "t1", {"intent_type": 1.5})
     assert d.outcome == DecisionOutcome.DENY
     assert d.reason_code == reason_codes.INVALID_INPUT
     assert "float not allowed" in (d.reason_message or "")
@@ -125,7 +125,20 @@ def test_decide_safe():
 def test_decide_safe_fills_digest_when_policy_omits_it():
     from dbl_policy import decide_safe
     policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
-    d1 = decide_safe(policy, "t1", {"use_case": "x"})
-    d2 = decide_safe(policy, "t1", {"use_case": "x"})
+    d1 = decide_safe(policy, "t1", {"intent_type": "x"})
+    d2 = decide_safe(policy, "t1", {"intent_type": "x"})
     assert d1.authoritative_digest != ""
     assert d1.authoritative_digest == d2.authoritative_digest
+
+
+def test_decide_safe_maps_unexpected_exception():
+    from dbl_policy import decide_safe
+
+    class BoomPolicy(ExamplePolicy):
+        def evaluate(self, context: PolicyContext) -> PolicyDecision:
+            raise RuntimeError("boom")
+
+    policy = BoomPolicy(PolicyId("example"), PolicyVersion("1.0.0"))
+    d = decide_safe(policy, "t1", {"intent_type": "x"})
+    assert d.outcome == DecisionOutcome.DENY
+    assert d.reason_code == reason_codes.EVALUATION_ERROR
