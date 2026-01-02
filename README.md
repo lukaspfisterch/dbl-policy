@@ -2,6 +2,7 @@
 
 Deterministic, tenant-scoped policy evaluation for DBL.
 This package produces DECISION events only. It does not execute tasks.
+Status: Stable
 
 ## What it is
 
@@ -164,4 +165,3 @@ python -m venv .venv
 python -m pip install -e ".[dev]"
 pytest
 ```
-

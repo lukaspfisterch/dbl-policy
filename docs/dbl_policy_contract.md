@@ -1,6 +1,6 @@
 # DBL Policy Contract (v0.2.0)
 
-Status: Draft
+Status: Stable
 Scope: dbl-policy tenant-scoped policy evaluation that produces DECISION events only.
 Contract version may lag package patch versions.
 
