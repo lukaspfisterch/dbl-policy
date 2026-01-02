@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pytest
+from collections.abc import Mapping
 
-from dbl_core import DblEventKind, GateDecision
+from dbl_core import DblEventKind
 from dbl_policy import (
     DecisionOutcome,
     PolicyContext,
@@ -11,6 +12,7 @@ from dbl_policy import (
     PolicyVersion,
     TenantId,
     decision_to_dbl_event,
+    reason_codes,
 )
 from dbl_policy.allow_all import POLICY as ALLOW_POLICY
 from dbl_policy.deny_all import POLICY as DENY_POLICY
@@ -21,18 +23,26 @@ class ExamplePolicy:
         self._policy_id = policy_id
         self._policy_version = policy_version
 
+    @property
+    def policy_id(self) -> PolicyId:
+        return self._policy_id
+
+    @property
+    def policy_version(self) -> PolicyVersion:
+        return self._policy_version
+
     def evaluate(self, context: PolicyContext) -> PolicyDecision:
         if context.tenant_id.value == "tenant-deny":
             return PolicyDecision(
                 outcome=DecisionOutcome.DENY,
-                reason_code="tenant_blocked",
+                reason_code=reason_codes.TENANT_BLOCKED,
                 policy_id=self._policy_id,
                 policy_version=self._policy_version,
                 tenant_id=context.tenant_id,
             )
         return PolicyDecision(
             outcome=DecisionOutcome.ALLOW,
-            reason_code="ok",
+            reason_code=reason_codes.OK,
             policy_id=self._policy_id,
             policy_version=self._policy_version,
             tenant_id=context.tenant_id,
@@ -56,34 +66,66 @@ def test_tenant_scoping_changes_decision():
 
 
 def test_no_observables_in_context():
-    with pytest.raises(ValueError, match="observational key not allowed"):
+    with pytest.raises(ValueError, match="context key not whitelisted"):
         PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"trace": {"x": 1}})
 
 
 def test_decision_to_dbl_event():
     decision = PolicyDecision(
         outcome=DecisionOutcome.ALLOW,
-        reason_code="ok",
+        reason_code=reason_codes.OK,
         policy_id=PolicyId("example"),
         policy_version=PolicyVersion("1.0.0"),
         tenant_id=TenantId("tenant-1"),
     )
     event = decision_to_dbl_event(decision, correlation_id="c1")
     assert event.event_kind == DblEventKind.DECISION
-    assert isinstance(event.data, GateDecision)
-    assert event.data.decision == "ALLOW"
-    assert event.data.reason_code == "ok"
+    assert isinstance(event.data, Mapping)
+    assert event.data["gate"]["decision"] == "ALLOW"
+    assert event.data["gate"]["reason_code"] == reason_codes.OK
+    assert event.data["policy_id"] == "example"
+    assert event.data["policy_version"] == "1.0.0"
 
 
 def test_allow_all_policy() -> None:
     ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
     d = ALLOW_POLICY.evaluate(ctx)
     assert d.outcome == DecisionOutcome.ALLOW
-    assert d.reason_code == "allow_all"
+    assert d.reason_code == reason_codes.ALLOW_ALL
 
 
 def test_deny_all_policy() -> None:
     ctx = PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"use_case": "x"})
     d = DENY_POLICY.evaluate(ctx)
     assert d.outcome == DecisionOutcome.DENY
-    assert d.reason_code == "deny_all"
+    assert d.reason_code == reason_codes.DENY_ALL
+
+
+def test_decide_safe():
+    from dbl_policy import decide_safe
+    policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
+    
+    # Valid input
+    d = decide_safe(policy, "t1", {"use_case": "x"})
+    assert d.outcome == DecisionOutcome.ALLOW
+    assert d.authoritative_digest != ""
+    
+    # Invalid context key
+    d = decide_safe(policy, "t1", {"unknown": "x"})
+    assert d.outcome == DecisionOutcome.DENY
+    assert d.reason_code == reason_codes.UNKNOWN_CONTEXT_KEY
+    
+    # Invalid type (float)
+    d = decide_safe(policy, "t1", {"use_case": 1.5})
+    assert d.outcome == DecisionOutcome.DENY
+    assert d.reason_code == reason_codes.INVALID_INPUT
+    assert "float not allowed" in (d.reason_message or "")
+
+
+def test_decide_safe_fills_digest_when_policy_omits_it():
+    from dbl_policy import decide_safe
+    policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
+    d1 = decide_safe(policy, "t1", {"use_case": "x"})
+    d2 = decide_safe(policy, "t1", {"use_case": "x"})
+    assert d1.authoritative_digest != ""
+    assert d1.authoritative_digest == d2.authoritative_digest

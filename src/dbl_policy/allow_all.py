@@ -11,21 +11,23 @@ from .model import (
     PolicyVersion,
     TenantId,
 )
+from . import reason_codes
 
 
 @dataclass(frozen=True)
 class AllowAllPolicy:
     policy_id: PolicyId = PolicyId("dbl_policy.allow_all")
-    policy_version: PolicyVersion = PolicyVersion("1.0.0")
+    policy_version: PolicyVersion = PolicyVersion("0.2.1")
 
     def evaluate(self, context: PolicyContext) -> PolicyDecision:
         return PolicyDecision(
             outcome=DecisionOutcome.ALLOW,
-            reason_code="allow_all",
+            reason_code=reason_codes.ALLOW_ALL,
             reason_message="development allow-all policy",
             policy_id=self.policy_id,
             policy_version=self.policy_version,
             tenant_id=context.tenant_id,
+            authoritative_digest=context.compute_authoritative_digest(),
         )
 
 
