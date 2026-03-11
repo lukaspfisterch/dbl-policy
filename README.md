@@ -6,7 +6,7 @@ Status: Stable
 
 ## What it is
 
-`dbl-policy` is the normative gate in the DBL stack:
+`dbl-policy` is the authoritative gate in the DBL stack:
 
 - It evaluates a policy from authoritative inputs only
 - It returns ALLOW or DENY with stable reason codes
