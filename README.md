@@ -1,5 +1,10 @@
 # DBL Policy
 
+[![Tests](https://github.com/lukaspfisterch/dbl-policy/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/lukaspfisterch/dbl-policy/actions/workflows/tests.yml)
+[![PyPI](https://img.shields.io/pypi/v/dbl-policy.svg)](https://pypi.org/project/dbl-policy/)
+[![Python >=3.11](https://img.shields.io/pypi/pyversions/dbl-policy.svg?label=Python)](https://pypi.org/project/dbl-policy/)
+[![Typing: Typed](https://img.shields.io/badge/typing-typed-2d7f5e.svg)](https://pypi.org/project/dbl-policy/)
+
 Deterministic, tenant-scoped policy evaluation for DBL.
 This package produces DECISION events only. It does not execute tasks.
 Status: Stable
