@@ -2,6 +2,9 @@
 inventory.md
 agents.md
 inventory_dbl-policy.md
+inventory_*.md
+inventory_summary*.json
+tools/refresh_inventory.py
 
 # OS / editor
 Thumbs.db
