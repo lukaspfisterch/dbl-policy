@@ -9,6 +9,27 @@ Deterministic, tenant-scoped policy evaluation for DBL.
 This package produces DECISION events only. It does not execute tasks.
 Status: Stable
 
+## Why this exists
+
+Governance needs two separate things:
+
+- a decision contract
+- a decision algebra
+
+`dbl-policy` is the first part.
+
+It does not define how governance logic is assembled.
+It defines what a policy decision is:
+
+- `PolicyContext` in
+- `PolicyDecision` out
+- pure evaluation
+- authoritative inputs only
+- deterministic output
+
+`dbl-policy-gates` is the second part.
+It defines how decisions are built.
+
 ## What it is
 
 `dbl-policy` is the contract layer for policy in the DBL stack:
@@ -17,6 +38,26 @@ Status: Stable
 - It returns ALLOW or DENY with stable reason codes
 - It can be bridged into a `dbl-core` DECISION event with a strict, contract-shaped `data` mapping
 - It is pure: no IO, no time, no randomness, no env, no network, no trace-dependence
+
+## Position in the stack
+
+```text
+execution mechanics
+    -> dbl-core
+
+policy contract
+    -> dbl-policy
+
+policy algebra
+    -> dbl-policy-gates
+
+domain policies
+```
+
+Short version:
+
+`dbl-policy` defines what a decision is.
+`dbl-policy-gates` defines how decisions are built.
 
 ## Non-goals
 
@@ -135,6 +176,11 @@ class ExamplePolicy:
             tenant_id=context.tenant_id,
         )
 ```
+
+In practice, most domain policies should now be assembled with
+`dbl-policy-gates` and exposed through a root policy object.
+Use a handwritten `Policy` implementation only when you need custom logic that
+does not fit the gate algebra.
 
 ## Safe evaluation (recommended)
 
