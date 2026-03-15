@@ -30,6 +30,9 @@ It defines what a policy decision is:
 `dbl-policy-gates` is the second part.
 It defines how decisions are built.
 
+In DBL terms, `dbl-policy` is the normative boundary of the stack.
+It is the point where execution mechanics end and authoritative decisions begin.
+
 ## What it is
 
 `dbl-policy` is the contract layer for policy in the DBL stack:
@@ -58,6 +61,9 @@ Short version:
 
 `dbl-policy` defines what a decision is.
 `dbl-policy-gates` defines how decisions are built.
+
+Execution can exist without governance.
+Normativity enters the system here.
 
 ## Non-goals
 
