@@ -6,7 +6,7 @@ Status: Stable
 
 ## What it is
 
-`dbl-policy` is the authoritative gate in the DBL stack:
+`dbl-policy` is the contract layer for policy in the DBL stack:
 
 - It evaluates a policy from authoritative inputs only
 - It returns ALLOW or DENY with stable reason codes
@@ -24,6 +24,15 @@ Status: Stable
 
 The authoritative specification is in:
 - `docs/dbl_policy_contract.md`
+- `docs/ARCHITECTURE.md`
+
+Architecture direction:
+
+- `dbl-policy` is the contract and bridge layer
+- `dbl-policy-gates` is the gate algebra layer
+- domain policies are root-level assemblies built on top
+
+Composition lives in `dbl-policy-gates`.
 
 Key invariants enforced by this package:
 
@@ -51,7 +60,8 @@ Requires Python 3.11+ and `dbl-core>=0.3,<0.4`.
 1) Use a built-in policy
 
 ```python
-from dbl_policy import PolicyContext, TenantId
+from dbl_policy import PolicyContext
+from dbl_policy.model import TenantId
 from dbl_policy.allow_all import POLICY as ALLOW_ALL
 
 ctx = PolicyContext(
@@ -65,7 +75,7 @@ decision = ALLOW_ALL.evaluate(ctx)
 2) Convert a decision to a DBL DECISION event
 
 ```python
-from dbl_policy import decision_to_dbl_event
+from dbl_policy.bridge import decision_to_dbl_event
 
 event = decision_to_dbl_event(decision, correlation_id="c1")
 ```
@@ -91,14 +101,9 @@ Policies only implement `evaluate(context)` and must be deterministic.
 
 ```python
 from dataclasses import dataclass
-from dbl_policy import (
-    PolicyContext,
-    PolicyDecision,
-    PolicyId,
-    PolicyVersion,
-    DecisionOutcome,
-)
-from dbl_policy import reason_codes
+from dbl_policy import PolicyContext, PolicyDecision
+from dbl_policy.model import DecisionOutcome, PolicyId, PolicyVersion
+import dbl_policy.reason_codes as reason_codes
 
 
 @dataclass(frozen=True)
@@ -142,12 +147,9 @@ d1 = decide_safe(POLICY, "tenant-1", {"intent_type": "x"})
 d2 = decide_safe(POLICY, "tenant-1", {"unknown_key": "x"})  # -> DENY
 ```
 
-## Starter policy pack
+## Allowed context keys
 
-The minimal starter pack is in `dbl_policy.policies.compose` and is designed for
-small teams. It evaluates in order and stops at the first DENY.
-
-Allowed context keys (strict whitelist):
+The contract enforces a strict whitelist:
 - principal_id
 - workspace_id
 - intent_type
@@ -161,9 +163,14 @@ Allowed context keys (strict whitelist):
 - request_tags
 - extensions
 
-Policy configuration lives in a single static dict:
-`dbl_policy.policies.compose.POLICY_CONFIG`.
-Edit it in-code to change allowlists and caps (no IO or env).
+## Legacy removal
+
+The pre-alignment starter policy pack from `dbl_policy.policies` has been
+removed in `0.3.0`.
+
+- It is superseded by the `dbl-policy-gates` algebra layer.
+- `dbl-policy` now focuses on protocol, validation, and bridge concerns only.
+- See `docs/ARCHITECTURE.md` and `docs/MIGRATION_0_3.md`.
 
 ## Reason codes
 
@@ -186,7 +193,7 @@ Reason codes are stable semantic identifiers:
 - cost.input_chars_cap
 - risk.high_requires_override
 
-See `src/dbl_policy/reason_codes.py`.
+See [src/dbl_policy/reason_codes.py](/mnt/d/DEV/projects/dbl-policy/src/dbl_policy/reason_codes.py).
 
 ## Development
 

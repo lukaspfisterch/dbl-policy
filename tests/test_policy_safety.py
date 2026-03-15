@@ -2,17 +2,16 @@ from __future__ import annotations
 
 import pytest
 from collections.abc import Mapping
-from dbl_policy import (
-    PolicyContext,
-    PolicyDecision,
+from dbl_policy import PolicyContext, PolicyDecision
+from dbl_policy.bridge import decision_to_dbl_event
+from dbl_policy.model import (
+    DecisionOutcome,
     PolicyId,
     PolicyVersion,
     TenantId,
-    DecisionOutcome,
-    decision_to_dbl_event,
-    reason_codes,
 )
-from dbl_policy.validate import ValidationError
+import dbl_policy.reason_codes as reason_codes
+from dbl_policy.validation import ValidationError
 
 
 def test_rejects_float_inputs():
@@ -107,7 +106,7 @@ def test_version_alignment():
     
     project_version = config["project"]["version"]
     assert dbl_policy.__version__ == project_version
-    assert project_version == "0.2.2"
+    assert project_version == "0.3.0"
 
 
 def test_authoritative_digest_is_stable_under_nested_key_ordering():

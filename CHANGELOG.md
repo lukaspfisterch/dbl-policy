@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] - 2026-03-14
+
+- Freeze the root package surface around the contract API only:
+  `Policy`, `PolicyContext`, `PolicyDecision`, `decide_safe`, `bridge`,
+  `validation`
+- Move root-level helper imports such as `DecisionOutcome`, `PolicyId`,
+  `PolicyVersion`, `TenantId`, and `decision_to_dbl_event` out of the public
+  package namespace
+- Remove the pre-alignment `dbl_policy.policies` starter pack from the active
+  package
+- Add explicit architecture and migration documents for the contract/algebra
+  split
+- Keep `allow_all` and `deny_all` as explicit helper modules, not root exports
+
 ## [0.2.2] - 2026-01-02
 
 - Add deterministic starter policy pack with composed allow/deny rules

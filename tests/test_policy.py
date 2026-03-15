@@ -4,21 +4,20 @@ import pytest
 from collections.abc import Mapping
 
 from dbl_core import DblEventKind
-from dbl_policy import (
+from dbl_policy import Policy, PolicyContext, PolicyDecision, decide_safe
+from dbl_policy.bridge import decision_to_dbl_event
+from dbl_policy.model import (
     DecisionOutcome,
-    PolicyContext,
-    PolicyDecision,
     PolicyId,
     PolicyVersion,
     TenantId,
-    decision_to_dbl_event,
-    reason_codes,
 )
+import dbl_policy.reason_codes as reason_codes
 from dbl_policy.allow_all import POLICY as ALLOW_POLICY
 from dbl_policy.deny_all import POLICY as DENY_POLICY
 
 
-class ExamplePolicy:
+class ExamplePolicy(Policy):
     def __init__(self, policy_id: PolicyId, policy_version: PolicyVersion) -> None:
         self._policy_id = policy_id
         self._policy_version = policy_version
@@ -67,7 +66,7 @@ def test_tenant_scoping_changes_decision():
 
 def test_no_observables_in_context():
     with pytest.raises(ValueError, match="context key not whitelisted"):
-        PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"trace": {"x": 1}})
+        PolicyContext(tenant_id=TenantId("tenant-1"), inputs={"runtime": 1})
 
 
 def test_decision_to_dbl_event():
@@ -102,7 +101,6 @@ def test_deny_all_policy() -> None:
 
 
 def test_decide_safe():
-    from dbl_policy import decide_safe
     policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
     
     # Valid input
@@ -123,7 +121,6 @@ def test_decide_safe():
 
 
 def test_decide_safe_fills_digest_when_policy_omits_it():
-    from dbl_policy import decide_safe
     policy = ExamplePolicy(PolicyId("example"), PolicyVersion("1.0.0"))
     d1 = decide_safe(policy, "t1", {"intent_type": "x"})
     d2 = decide_safe(policy, "t1", {"intent_type": "x"})
@@ -132,8 +129,6 @@ def test_decide_safe_fills_digest_when_policy_omits_it():
 
 
 def test_decide_safe_maps_unexpected_exception():
-    from dbl_policy import decide_safe
-
     class BoomPolicy(ExamplePolicy):
         def evaluate(self, context: PolicyContext) -> PolicyDecision:
             raise RuntimeError("boom")
