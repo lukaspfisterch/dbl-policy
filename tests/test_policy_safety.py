@@ -106,7 +106,7 @@ def test_version_alignment():
     
     project_version = config["project"]["version"]
     assert dbl_policy.__version__ == project_version
-    assert project_version == "0.3.0"
+    assert project_version == "0.3.1"
 
 
 def test_authoritative_digest_is_stable_under_nested_key_ordering():

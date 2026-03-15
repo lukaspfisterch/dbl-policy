@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2026-03-15
+
+- Clean up packaging metadata for modern setuptools
+- Move `license-files` into the `project` table
+- Switch to SPDX-style `license = "MIT"`
+- Remove deprecated license classifier usage
+
 ## [0.3.0] - 2026-03-14
 
 - Freeze the root package surface around the contract API only:

@@ -17,7 +17,7 @@ from . import reason_codes
 @dataclass(frozen=True)
 class AllowAllPolicy:
     policy_id: PolicyId = PolicyId("dbl_policy.allow_all")
-    policy_version: PolicyVersion = PolicyVersion("0.3.0")
+    policy_version: PolicyVersion = PolicyVersion("0.3.1")
 
     def evaluate(self, context: PolicyContext) -> PolicyDecision:
         return PolicyDecision(
